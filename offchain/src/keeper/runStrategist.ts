@@ -37,13 +37,21 @@ function encodeCall(signature: string, args: unknown[]): Hex {
   return encodeFunctionData({ abi: [item], functionName, args } as never);
 }
 
-/** STUB market data. Wire your real price feed + funding/FX APIs here. */
+/**
+ * STUB market data. Wire your real price feed + funding/FX APIs here.
+ *
+ * Defaults are tuned for a SAFE live run on Arc: regime resolves risk-off (park in USYC) and
+ * CarryFarm holds USYC. So an EXECUTE cycle only touches the USYC teller — never the cross-chain
+ * bridge (REMOTE_RISK_VAULT is unset -> would target 0x0) or StableFX (RFQ not implemented).
+ * Flip cryptoYieldApy high / eurUsdCarryPct above ~1.5 (and set REMOTE_RISK_VAULT) to exercise
+ * the risk-on / FX paths once those venues are wired.
+ */
 async function fetchMarketContext(): Promise<MarketContext> {
   return {
-    riskAssetPrices: [3000, 3050, 3100, 3080, 3150, 3200, 3300, 3400, 3380, 3500],
+    riskAssetPrices: [3500, 3400, 3350, 3300, 3200, 3150, 3100, 3050, 3010, 2950],
     tbillApy: 5.0,
-    cryptoYieldApy: 6.5, // cross-chain risk-venue yield -> RegimeShift leans risk-on
-    eurUsdCarryPct: 2.5, // EUR/USD carry clears the floor -> CarryFarm takes an EURC sleeve
+    cryptoYieldApy: 2.0, // below the T-bill floor -> negative carry -> RegimeShift risk-off (USYC)
+    eurUsdCarryPct: 1.0, // inside the buffer -> CarryFarm holds USYC (no FX leg)
     equityUsd: 100_000,
   };
 }

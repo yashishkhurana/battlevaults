@@ -11,6 +11,8 @@ import {ManagerWithMerkleVerification} from "../src/ManagerWithMerkleVerificatio
 import {MetaAllocator} from "../src/MetaAllocator.sol";
 import {SimpleRolesAuthority} from "../src/SimpleRolesAuthority.sol";
 import {AgentJournal} from "../src/AgentJournal.sol";
+import {RegimeDecoderAndSanitizer} from "../src/decoders/RegimeDecoderAndSanitizer.sol";
+import {CarryDecoderAndSanitizer} from "../src/decoders/CarryDecoderAndSanitizer.sol";
 
 /**
  * @notice Deploys both vault stacks + the MetaAllocator and wires every capability.
@@ -21,8 +23,10 @@ import {AgentJournal} from "../src/AgentJournal.sol";
  *     REGIME_STRATEGIST  EOA the RegimeShift keeper signs from
  *     CARRY_STRATEGIST   EOA the CarryFarm keeper signs from
  *     ORACLE             EOA allowed to push NAV updates (can equal the strategists)
- *     REGIME_ROOT        merkle root from `npm run build-tree` (offchain)
- *     CARRY_ROOT         merkle root from `npm run build-tree` (offchain)
+ *
+ *   Roots are NOT set here — the merkle leaves pin the deployed decoder + vault addresses, which
+ *   aren't known until this script runs. After deploy: paste the logged addresses into config.ts,
+ *   `npm run build-tree`, then `forge script SetRoots.s.sol --broadcast`. See GO_LIVE.md.
  *
  *   forge script script/Deploy.s.sol --rpc-url https://rpc.testnet.arc.network --broadcast
  *   (gas is paid in USDC on Arc — fund the deployer from faucet.circle.com)
@@ -35,8 +39,6 @@ contract Deploy is Script {
         address regimeStrategist = vm.envAddress("REGIME_STRATEGIST");
         address carryStrategist = vm.envAddress("CARRY_STRATEGIST");
         address oracle = vm.envAddress("ORACLE");
-        bytes32 regimeRoot = vm.envBytes32("REGIME_ROOT");
-        bytes32 carryRoot = vm.envBytes32("CARRY_ROOT");
 
         vm.startBroadcast(pk);
 
@@ -51,9 +53,10 @@ contract Deploy is Script {
         _wire(auth, vA, aA, tA, mA, regimeStrategist, oracle);
         _wire(auth, vB, aB, tB, mB, carryStrategist, oracle);
 
-        // assign each strategist its allowed action set (merkle root)
-        mA.setManageRoot(regimeStrategist, regimeRoot);
-        mB.setManageRoot(carryStrategist, carryRoot);
+        // DecoderAndSanitizers — the merkle leaves pin these addresses, so they MUST be deployed and
+        // put into config.ts before building roots. Roots are set later via SetRoots.s.sol.
+        RegimeDecoderAndSanitizer regimeDecoder = new RegimeDecoderAndSanitizer();
+        CarryDecoderAndSanitizer carryDecoder = new CarryDecoderAndSanitizer();
 
         MetaAllocator.VaultInfo[2] memory infos;
         infos[0] = MetaAllocator.VaultInfo(tA, aA, ERC20(address(vA)));
@@ -68,11 +71,18 @@ contract Deploy is Script {
 
         vm.stopBroadcast();
 
-        console2.log("authority   ", address(auth));
-        console2.log("regime vault", address(vA));
-        console2.log("carry vault ", address(vB));
-        console2.log("allocator   ", address(allocator));
-        console2.log("journal     ", address(journal));
+        console2.log("=== paste into offchain/src/config.ts, then build-tree + SetRoots ===");
+        console2.log("authority        ", address(auth));
+        console2.log("REGIME_VAULT     ", address(vA));
+        console2.log("REGIME_ACCOUNTANT", address(aA));
+        console2.log("REGIME_MANAGER   ", address(mA));
+        console2.log("REGIME_DECODER   ", address(regimeDecoder));
+        console2.log("CARRY_VAULT      ", address(vB));
+        console2.log("CARRY_ACCOUNTANT ", address(aB));
+        console2.log("CARRY_MANAGER    ", address(mB));
+        console2.log("CARRY_DECODER    ", address(carryDecoder));
+        console2.log("META_ALLOCATOR   ", address(allocator));
+        console2.log("AGENT_JOURNAL    ", address(journal));
     }
 
     function _deployStack(address owner, address usdc, string memory name, string memory sym)
