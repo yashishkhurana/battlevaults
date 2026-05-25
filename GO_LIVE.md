@@ -93,7 +93,7 @@ forge script script/SetRoots.s.sol --rpc-url https://rpc.testnet.arc.network --b
 
 - [ ] Deposit a small USDC amount into the MetaAllocator → confirm BATTLE minted, `totalNav()` moves.
 - [ ] `cd offchain && npm run price` (dry) → sane AUM/rate; then `EXECUTE=1 ORACLE_PK=0x... npm run price` → rate pushed within bounds.
-- [ ] `EXECUTE=1 STRATEGIST_PK=0x... ANTHROPIC_API_KEY=sk-... npm run regime` → a `manage` tx lands AND a `Deliberation` is recorded.
+- [ ] `LLM_BASE_URL=http://your-deepseek:8000/v1 LLM_MODEL=deepseek-ai/DeepSeek-V3 EXECUTE=1 STRATEGIST_PK=0x... npm run regime` → a `manage` tx lands AND a `Deliberation` is recorded.
 - [ ] Same for `carry`.
 - [ ] **Re-prove the guardrail on the LIVE manager**: submit a deliberately wrong-recipient/wrong-domain
       call → it reverts. (Screenshot this for the video — it's your thesis.)

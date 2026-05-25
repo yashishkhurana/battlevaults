@@ -81,13 +81,16 @@ export const CHAIN = {
 };
 
 /**
- * The agent uses the Anthropic API to make decisions when ANTHROPIC_API_KEY is set; otherwise it
- * falls back to the deterministic rule engine so the keeper always runs (e.g. offline demos).
- *   env: ANTHROPIC_API_KEY, ANTHROPIC_MODEL (default claude-sonnet-4-6), IPFS_BASE_URL (optional)
+ * The agent calls an OpenAI-compatible chat endpoint (self-hosted DeepSeek via vLLM / Ollama /
+ * SGLang / TGI, or DeepSeek cloud) when LLM_BASE_URL is set; otherwise it falls back to the
+ * deterministic rule engine so the keeper always runs (e.g. offline demos).
+ *   env: LLM_BASE_URL (e.g. http://localhost:8000/v1), LLM_MODEL (e.g. deepseek-ai/DeepSeek-V3),
+ *        LLM_API_KEY (optional), IPFS_BASE_URL (optional)
  */
 export const LLM = {
-  enabled: !!process.env.ANTHROPIC_API_KEY,
-  model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
+  enabled: !!process.env.LLM_BASE_URL,
+  baseUrl: process.env.LLM_BASE_URL ?? "",
+  model: process.env.LLM_MODEL ?? "deepseek-chat",
 };
 
 /**

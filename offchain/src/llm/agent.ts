@@ -1,15 +1,26 @@
 import type { Action, AgentDecision, MarketContext } from "../types";
 import { buildPrompt, type Persona } from "./prompt";
 
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
-
 /**
- * The LLM is the actual decision-maker: given the market context, the quant signal, and the
- * agent's allowed action menu, it picks which actions to take, sizes them, and explains why.
- * It is bounded twice over — it can only choose from the menu (validated here), and whatever it
- * picks is still checked against the on-chain merkle root. If no ANTHROPIC_API_KEY is set, or the
- * call fails, we deterministically fall back to the rule engine so the keeper always runs.
+ * OpenAI-compatible chat client — works with a self-hosted DeepSeek server (vLLM, Ollama, SGLang,
+ * TGI) and with DeepSeek's cloud API, since they all expose `/v1/chat/completions`. The LLM is the
+ * decision-maker: given the context, the quant signal, and the allowed action menu, it chooses
+ * which actions to take, sizes them, and explains why. It is bounded twice — it can only pick from
+ * the menu (validated here), and whatever it picks is re-checked against the on-chain merkle root.
+ *
+ * Enable by setting LLM_BASE_URL; if unset (or the call fails) we deterministically fall back to
+ * the rule engine so the keeper always runs.
+ *
+ *   env:
+ *     LLM_BASE_URL  e.g. http://localhost:8000/v1   (vLLM)   ·   http://localhost:11434/v1 (Ollama)
+ *                   ·   https://api.deepseek.com/v1 (DeepSeek cloud)
+ *     LLM_MODEL     e.g. deepseek-ai/DeepSeek-V3 (vLLM id) · deepseek-chat / deepseek-reasoner (cloud)
+ *     LLM_API_KEY   optional; many local servers ignore it
  */
+const BASE_URL = process.env.LLM_BASE_URL ?? "";
+const MODEL = process.env.LLM_MODEL ?? "deepseek-chat";
+const API_KEY = process.env.LLM_API_KEY ?? "not-needed";
+
 export async function decideWithLLM(opts: {
   persona: Persona;
   ctx: MarketContext;
@@ -17,29 +28,34 @@ export async function decideWithLLM(opts: {
   allowed: Action[];
   fallback: () => AgentDecision;
 }): Promise<AgentDecision> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return opts.fallback();
+  if (!BASE_URL) return opts.fallback();
 
   try {
     const { system, user } = buildPrompt(opts.persona, opts.ctx, opts.signal, opts.allowed);
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch(`${BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
+        authorization: `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 800,
-        system,
-        messages: [{ role: "user", content: user }],
+        temperature: 0.2,
+        max_tokens: 1024,
+        // strict JSON output; honored by DeepSeek cloud, vLLM, SGLang, TGI. If a server ignores it,
+        // the fence-stripping below still recovers the object.
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
       }),
     });
-    if (!res.ok) throw new Error(`anthropic ${res.status} ${await res.text()}`);
+    if (!res.ok) throw new Error(`llm ${res.status} ${await res.text()}`);
 
     const data: any = await res.json();
-    const text: string = (data?.content?.[0]?.text ?? "").trim();
+    const msg = data?.choices?.[0]?.message ?? {};
+    const text: string = (msg.content ?? "").trim();
     const json = JSON.parse(text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, ""));
 
     // defense-in-depth: drop any action the model invented that isn't on the allowed menu
@@ -48,11 +64,16 @@ export async function decideWithLLM(opts: {
       .filter((i: any) => i && allowedNames.has(i.actionName))
       .map((i: any) => ({ actionName: String(i.actionName), notionalUsd: Math.max(0, Number(i.notionalUsd) || 0) }));
 
+    // reasoner models (deepseek-reasoner / R1) expose the chain-of-thought separately — capture it
+    // as part of the journaled trace ("reasoning trace as the product").
+    const cot = typeof msg.reasoning_content === "string" ? msg.reasoning_content : "";
+    const reasoning = (String(json.reasoning ?? "") + (cot ? `\n\n[trace] ${cot}` : "")).slice(0, 4000);
+
     return {
       view: String(json.view ?? "neutral"),
       confidence: Math.min(1, Math.max(0, Number(json.confidence) || 0)),
       intents,
-      reasoning: String(json.reasoning ?? "").slice(0, 2000),
+      reasoning,
       source: "llm",
     };
   } catch (e) {

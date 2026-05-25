@@ -109,8 +109,8 @@ forge test -vvv
 cd offchain
 npm run regime                # dry-run: LLM decides, prints reasoning + the merkle-bounded calls
 tsx src/keeper/runStrategist.ts carry   # CarryFarm dry-run
-# LLM decides when ANTHROPIC_API_KEY is set; without it, the deterministic rule engine runs:
-ANTHROPIC_API_KEY=sk-... EXECUTE=1 STRATEGIST_PK=0x... npm run regime
+# LLM decides when LLM_BASE_URL is set (self-hosted DeepSeek, OpenAI-compatible); else rule engine:
+LLM_BASE_URL=http://localhost:8000/v1 LLM_MODEL=deepseek-ai/DeepSeek-V3 EXECUTE=1 STRATEGIST_PK=0x... npm run regime
 npm run price                 # NAV pricer: value holdings -> push Accountant rate (the scoreboard spine)
 EXECUTE=1 ORACLE_PK=0x... npm run price          # actually push NAV on-chain (deviation-guarded)
 npm run allocator             # print the live scoreboard;  ROLL=1 ALLOCATOR_PK=0x... to roll the epoch
