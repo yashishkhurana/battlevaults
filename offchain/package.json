@@ -1,0 +1,26 @@
+{
+  "name": "battle-vaults-offchain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Off-chain strategist brains + meta-allocator keeper for Battle Vaults",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "regime": "tsx src/keeper/runStrategist.ts regime",
+    "carry": "tsx src/keeper/runStrategist.ts carry",
+    "allocator": "tsx src/keeper/metaAllocator.ts",
+    "price": "tsx src/keeper/pricer.ts",
+    "build-tree": "tsx src/merkle/buildTrees.ts"
+  },
+  "dependencies": {
+    "viem": "2.21.45"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.7.0"
+  },
+  "overrides": {
+    "ox": "0.1.2"
+  }
+}

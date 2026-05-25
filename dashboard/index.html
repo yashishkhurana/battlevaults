@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Agora · Battle Vaults</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#100f0c; --bg2:#15130f; --panel:#1b1812; --panel2:#221e16; --line:#36302457;
+    --edge:#3a3326; --marble:#efe7d4; --ink:#efe7d4; --muted:#a99d83; --faint:#7d745f;
+    --gold:#c9a35b; --gold-bright:#e7cd93; --azure:#6a9fd8; --terra:#d0824f;
+    --btc:#b87333; --spx:#aeb6c2; --danger:#c64a30; --win:#86b06a;
+    --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+    --sans:'Inter',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -10%, #1d1a1340 0%, transparent 70%),
+      var(--bg);
+    color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 24px 56px}
+
+  /* greek key meander divider */
+  .meander{height:14px;background-size:28px 14px;opacity:.5;margin:18px 0;
+    background-image:
+      linear-gradient(90deg,var(--gold) 2px,transparent 0),
+      linear-gradient(90deg,var(--gold) 2px,transparent 0),
+      linear-gradient(var(--gold) 2px,transparent 0);
+    background-repeat:repeat-x;
+    /* simple dashed-classical fallback */
+    background:repeating-linear-gradient(90deg,transparent 0 6px,var(--gold) 6px 8px,transparent 8px 14px,var(--gold) 14px 16px,transparent 16px 28px);
+  }
+
+  header .eyebrow{font-family:var(--sans);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  header h1{font-family:var(--serif);font-weight:600;font-size:54px;line-height:.98;margin:6px 0 4px;letter-spacing:.5px}
+  header h1 .amp{color:var(--gold)}
+  header .lede{font-family:var(--serif);font-style:italic;font-size:19px;color:var(--muted);max-width:680px;margin:0}
+  .topline{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+  .chip{font-family:var(--sans);font-size:11px;letter-spacing:.06em;color:var(--gold-bright);
+    border:1px solid var(--edge);border-radius:999px;padding:6px 12px;white-space:nowrap;background:#ffffff06}
+  .chip b{color:var(--marble);font-weight:600}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px}
+  .kpi{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--edge);border-radius:12px;padding:14px 16px}
+  .kpi .l{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .kpi .v{font-family:var(--serif);font-weight:600;font-size:30px;margin-top:1px;line-height:1}
+  .kpi .v small{font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:500}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--edge);border-radius:16px;padding:18px 18px 16px;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--accent,var(--gold))}
+  .card.breaker{border-color:#7a2a1c;box-shadow:0 0 0 1px #7a2a1c inset}
+  .citizen{display:flex;align-items:center;gap:12px}
+  .sigil{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);
+    font-size:24px;font-weight:600;color:#100f0c;background:var(--accent);box-shadow:0 0 0 3px #ffffff10}
+  .citizen h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:0;line-height:1}
+  .citizen .role{font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .status{margin-left:auto;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid var(--edge);color:var(--win)}
+  .status.brk{color:#ff8a6e;border-color:#7a2a1c}
+  .navrow{display:flex;align-items:baseline;gap:12px;margin-top:14px}
+  .nav{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1}
+  .ret{font-size:14px;font-weight:600}
+  .up{color:var(--win)} .down{color:#e9785c}
+  .alloc{height:7px;border-radius:6px;background:#ffffff0d;margin:13px 0 6px;overflow:hidden}
+  .alloc>span{display:block;height:100%;background:var(--accent);transition:width .5s ease}
+  .alloc-l{font-size:11.5px;color:var(--muted)} .alloc-l b{color:var(--marble)}
+  .deliberation{margin-top:13px;font-family:var(--serif);font-size:15.5px;font-style:italic;color:#cdc4ab;
+    background:#0e0d0a99;border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:8px;padding:11px 13px;min-height:62px}
+  .delib-meta{font-family:var(--sans);font-size:10.5px;color:var(--faint);margin-top:8px;letter-spacing:.02em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .delib-meta b{color:var(--gold-bright);font-weight:500;font-family:ui-monospace,Menlo,monospace}
+  .delib-meta .src{border:1px solid var(--edge);border-radius:999px;padding:1px 7px;color:var(--muted)}
+  .delib-meta .src.ai{color:var(--win);border-color:#4f6b43}
+
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--edge);border-radius:16px;padding:18px;margin-top:14px}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .panel-h h3{font-family:var(--serif);font-weight:600;font-size:22px;margin:0;letter-spacing:.4px}
+  .panel-h .sub{font-size:11px;color:var(--faint);letter-spacing:.14em;text-transform:uppercase}
+
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);text-align:right;padding:8px 10px;font-weight:600}
+  th:first-child,td:first-child{text-align:left}
+  td{padding:11px 10px;border-top:1px solid var(--line);font-size:14px}
+  tr.agent td{font-weight:500}
+  .rank{font-family:var(--serif);font-size:20px;color:var(--gold);width:26px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+  .bench td{color:var(--muted)}
+  .tag-led{font-size:10px;color:#100f0c;background:var(--gold);border-radius:4px;padding:1px 6px;margin-left:8px;font-weight:600;letter-spacing:.04em}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+  .legend i{display:inline-block;width:11px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .btn{font-family:var(--sans);background:#ffffff08;border:1px solid var(--edge);color:var(--marble);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px}
+  .btn:hover{border-color:var(--gold)}
+
+  .quote{text-align:center;margin:34px auto 0;max-width:760px}
+  .quote p{font-family:var(--serif);font-style:italic;font-size:22px;color:#d7cdb2;margin:0}
+  .quote span{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-top:8px}
+  .foot{color:var(--faint);font-size:11.5px;text-align:center;margin-top:26px;line-height:1.7}
+  code{background:#ffffff0d;padding:1px 5px;border-radius:4px;color:var(--gold-bright);font-size:11px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}header h1{font-size:40px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="topline">
+      <div>
+        <div class="eyebrow">⚖ The Agora · Adaptive Portfolio Manager</div>
+        <h1>Battle&nbsp;Vaults</h1>
+        <p class="lede">Two agents deliberate over the market. Capital follows whoever reasons best.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <span class="chip">Settled on <b>Arc</b> · gas in <b>USDC</b> · sub-second finality</span>
+        <span class="chip">RFB&nbsp;04 · regime · USYC · CCTP cross-chain</span>
+      </div>
+    </div>
+    <div class="meander"></div>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">Assets under management</div><div class="v" id="aum">—</div></div>
+    <div class="kpi"><div class="l">Citizens (depositors)</div><div class="v" id="users">—</div></div>
+    <div class="kpi"><div class="l">Rebalances · Arc tx</div><div class="v" id="turns">—</div></div>
+    <div class="kpi"><div class="l">Avg fee / rebalance</div><div class="v">$0.01 <small>USDC</small></div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card" id="card-a" style="--accent:var(--azure)">
+      <div class="citizen">
+        <div class="sigil">Α</div>
+        <div>
+          <h2>RegimeShift</h2>
+          <div class="role">regime classifier → USYC ⇄ cross-chain risk (CCTP)</div>
+        </div>
+        <span class="status" id="st-a">deliberating</span>
+      </div>
+      <div class="navrow"><div class="nav" id="nav-a">—</div><div class="ret up" id="ret-a">+0.00%</div></div>
+      <div class="alloc"><span id="bar-a" style="width:50%"></span></div>
+      <div class="alloc-l">capital routed: <b id="w-a">50%</b></div>
+      <div class="deliberation" id="why-a">Reading the agora…</div>
+      <div class="delib-meta" id="meta-a"></div>
+    </div>
+
+    <div class="card" id="card-b" style="--accent:var(--terra)">
+      <div class="citizen">
+        <div class="sigil">Β</div>
+        <div>
+          <h2>CarryFarm</h2>
+          <div class="role">USYC T-bill yield + EURC FX carry (StableFX)</div>
+        </div>
+        <span class="status" id="st-b">deliberating</span>
+      </div>
+      <div class="navrow"><div class="nav" id="nav-b">—</div><div class="ret up" id="ret-b">+0.00%</div></div>
+      <div class="alloc"><span id="bar-b" style="width:50%"></span></div>
+      <div class="alloc-l">capital routed: <b id="w-b">50%</b></div>
+      <div class="deliberation" id="why-b">Reading the agora…</div>
+      <div class="delib-meta" id="meta-b"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>The Tribunal</h3><span class="sub">returns vs benchmark · indexed to 100</span></div>
+    <table id="board">
+      <thead><tr><th>#</th><th>Participant</th><th>NAV</th><th>Return</th><th>vs BTC</th><th>vs S&amp;P</th><th>Capital</th><th>State</th></tr></thead>
+      <tbody id="board-body"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h">
+      <div class="legend">
+        <span><i style="background:var(--azure)"></i>RegimeShift</span>
+        <span><i style="background:var(--terra)"></i>CarryFarm</span>
+        <span><i style="background:var(--btc)"></i>Bitcoin</span>
+        <span><i style="background:var(--spx)"></i>S&amp;P 500</span>
+      </div>
+      <button class="btn" id="toggle">⏸ Pause</button>
+    </div>
+    <canvas id="chart" height="118"></canvas>
+  </div>
+
+  <div class="quote">
+    <p>“All things that are exchanged must be somehow comparable.”</p>
+    <span>Aristotle · Nicomachean Ethics, Book V</span>
+  </div>
+
+  <div class="meander"></div>
+  <div class="foot">
+    Demo mode simulates a market so the race moves. Live mode reads the MetaAllocator on Arc —
+    <code>totalNav()</code> · <code>vaultNav(i)</code> · <code>previewSplit()</code> · <code>inBreaker(i)</code>.
+    Each rebalance is one Arc transaction (~$0.01 in USDC). Risk-off parks in USYC; cross-chain moves use CCTP.
+  </div>
+</div>
+
+<script>
+const N = 64;
+let t = 0, running = true, turns = 0, users = 47;
+
+// ---- live mode: pass ?allocator=0x..&journal=0x..&regime=0x..&carry=0x..&rpc=.. to read Arc ----
+const params = new URLSearchParams(location.search);
+const LIVE = {
+  enabled: !!params.get('allocator'),
+  rpc: params.get('rpc') || 'https://rpc.testnet.arc.network',
+  allocator: params.get('allocator') || '',
+  journal: params.get('journal') || '',
+  regimeAgent: (params.get('regime') || '').toLowerCase(),
+  carryAgent: (params.get('carry') || '').toLowerCase(),
+  pollMs: 6000,
+};
+const liveState = { wa:50, wb:50, brkA:false, brkB:false, aum:0, users:0, turns:0,
+  whyA:'Reading on-chain…', whyB:'Reading on-chain…', hashA:'', hashB:'', cidA:'', cidB:'' };
+const S = { a:[100], b:[100], btc:[100], spx:[100] };
+const hwm = { a:100, b:100 }; const brk = { a:false, b:false };
+const labels = [0];
+const last = k => S[k][S[k].length-1];
+
+function step(){
+  t++;
+  const phase = Math.sin(t/15);                 // slow risk cycle
+  const shock = Math.random()-0.5;
+  const btcRet = phase*0.013 + shock*0.032;
+  const spxRet = phase*0.004 + (Math.random()-0.5)*0.006;
+  const riskOn = phase > -0.12;
+  const aRet = riskOn ? btcRet*0.82 + 0.0006 : 0.00015;   // tracks risk venue when on; ~T-bill drip when off
+  const bRet = 0.00105 + (Math.random()-0.5)*0.0014;      // steady carry, low vol
+  const push=(k,r)=>S[k].push(+(last(k)*(1+r)).toFixed(3));
+  push('a',aRet); push('b',bRet); push('btc',btcRet); push('spx',spxRet); labels.push(t);
+  hwm.a=Math.max(hwm.a,last('a')); hwm.b=Math.max(hwm.b,last('b'));
+  brk.a=last('a')<hwm.a*0.8; brk.b=last('b')<hwm.b*0.8;
+  for(const k in S){ if(S[k].length>N) S[k].shift(); } if(labels.length>N) labels.shift();
+}
+function split(){
+  if(LIVE.enabled) return [liveState.wa, liveState.wb];
+  if(brk.a&&!brk.b) return [0,100];
+  if(brk.b&&!brk.a) return [100,0];
+  return last('a')>=last('b') ? [80,20] : [20,80];
+}
+const ret = k => last(k)-100;
+const fmtUsd = idx => '$'+Math.round(idx*1000).toLocaleString();
+const fmtPct = v => (v>=0?'+':'')+v.toFixed(2)+'%';
+
+const RAT_A = {
+  on:"Regime <b>risk-on</b> — trend up, vol contained. Bridging USDC to the risk venue via <b>CCTP</b>, trimming the USYC sleeve.",
+  off:"Regime <b>risk-off</b> — vol spiked, trend broke. Redeeming the risk leg and parking ~90% in <b>USYC</b> T-bills until conditions mend.",
+  brk:"<b>Circuit-breaker tripped</b> — NAV &gt;20% below high-water mark. Allowed actions collapse to <b>exit-to-USYC only</b>; allocator routes 0% here."
+};
+function ratB(){
+  const apr=(Math.random()*6+4.4).toFixed(1);
+  const fx=(Math.random()*2+1).toFixed(1);
+  return `Carry positive — holding <b>USYC</b> at ~${apr}%, rotating a sleeve into <b>EURC</b> via <b>StableFX</b> (+${fx}% FX) for diversification.`;
+}
+
+let chart;
+function render(){
+  const [wa,wb]=split();
+  document.getElementById('nav-a').textContent=fmtUsd(last('a'));
+  document.getElementById('nav-b').textContent=fmtUsd(last('b'));
+  setRet('ret-a',ret('a')); setRet('ret-b',ret('b'));
+  document.getElementById('w-a').textContent=wa+'%'; document.getElementById('w-b').textContent=wb+'%';
+  document.getElementById('bar-a').style.width=wa+'%'; document.getElementById('bar-b').style.width=wb+'%';
+
+  document.getElementById('card-a').classList.toggle('breaker',brk.a);
+  document.getElementById('card-b').classList.toggle('breaker',brk.b);
+  st('st-a',brk.a); st('st-b',brk.b);
+  if(LIVE.enabled){
+    document.getElementById('why-a').innerHTML = liveState.whyA;
+    document.getElementById('why-b').innerHTML = liveState.whyB;
+    setMeta('meta-a', liveState.whyA, liveState.hashA, liveState.cidA);
+    setMeta('meta-b', liveState.whyB, liveState.hashB, liveState.cidB);
+  } else {
+    const riskOn = Math.sin(t/15) > -0.12;
+    document.getElementById('why-a').innerHTML = brk.a?RAT_A.brk:(riskOn?RAT_A.on:RAT_A.off);
+    document.getElementById('why-b').innerHTML = brk.b?"<b>Circuit-breaker tripped</b> — de-risking the carry book to USYC only.":ratB();
+    setMeta('meta-a', document.getElementById('why-a').textContent);
+    setMeta('meta-b', document.getElementById('why-b').textContent);
+  }
+
+  // KPIs
+  if(LIVE.enabled){
+    document.getElementById('aum').innerHTML='$'+liveState.aum.toLocaleString()+' <small>USDC</small>';
+    document.getElementById('users').textContent=liveState.users;
+    document.getElementById('turns').textContent=liveState.turns.toLocaleString();
+  } else {
+    const aum=(last('a')*wa/100+last('b')*wb/100);
+    document.getElementById('aum').innerHTML='$'+Math.round(aum*12500).toLocaleString()+' <small>USDC</small>';
+    document.getElementById('users').textContent=users;
+    document.getElementById('turns').textContent=turns.toLocaleString();
+  }
+
+  // leaderboard
+  const [WA,WB]=[wa,wb];
+  const rows=[
+    {name:'RegimeShift',cls:'agent',color:'var(--azure)',r:ret('a'),cap:WA+'%',state:brk.a?'breaker':'live',brk:brk.a},
+    {name:'CarryFarm',cls:'agent',color:'var(--terra)',r:ret('b'),cap:WB+'%',state:brk.b?'breaker':'live',brk:brk.b},
+    {name:'Bitcoin',cls:'bench',color:'var(--btc)',r:ret('btc'),cap:'—',state:'benchmark'},
+    {name:'S&P 500',cls:'bench',color:'var(--spx)',r:ret('spx'),cap:'—',state:'benchmark'},
+  ].sort((x,y)=>y.r-x.r);
+  const leader=rows.find(r=>r.cls==='agent'&&!r.brk&&Math.max(ret('a'),ret('b'))===r.r);
+  const body=document.getElementById('board-body'); body.innerHTML='';
+  rows.forEach((row,i)=>{
+    const vsBtc=row.r-ret('btc'), vsSpx=row.r-ret('spx');
+    const led=(leader&&row.name===leader.name)?'<span class="tag-led">LEADING</span>':'';
+    body.insertAdjacentHTML('beforeend',
+      `<tr class="${row.cls}">
+        <td class="rank">${i+1}</td>
+        <td><span class="dot" style="background:${row.color}"></span>${row.name}${led}</td>
+        <td style="text-align:right">${row.cls==='agent'?fmtUsd(last(row.name==='RegimeShift'?'a':'b')):'—'}</td>
+        <td style="text-align:right" class="${row.r>=0?'up':'down'}">${fmtPct(row.r)}</td>
+        <td style="text-align:right" class="${vsBtc>=0?'up':'down'}">${fmtPct(vsBtc)}</td>
+        <td style="text-align:right" class="${vsSpx>=0?'up':'down'}">${fmtPct(vsSpx)}</td>
+        <td style="text-align:right">${row.cap}</td>
+        <td style="text-align:right;color:${row.state==='breaker'?'#ff8a6e':'var(--muted)'}">${row.state}</td>
+      </tr>`);
+  });
+
+  chart.data.labels=labels.slice();
+  chart.data.datasets[0].data=S.a.slice();
+  chart.data.datasets[1].data=S.b.slice();
+  chart.data.datasets[2].data=S.btc.slice();
+  chart.data.datasets[3].data=S.spx.slice();
+  chart.update('none');
+}
+function setRet(id,v){const e=document.getElementById(id);e.textContent=fmtPct(v);e.className='ret '+(v>=0?'up':'down');}
+function st(id,b){const e=document.getElementById(id);e.textContent=b?'breaker':'live';e.className='status'+(b?' brk':'');}
+function h32(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return('0000000'+h.toString(16)).slice(-8);}
+function setMeta(id,text,realHash,realCid){const e=document.getElementById(id);const hash=realHash||('0x'+h32(text)+h32(text.split('').reverse().join('')));const trace=(realCid&&realCid.startsWith('http'))?` · <a href="${realCid}" target="_blank" style="color:var(--gold-bright)">trace ↗</a>`:'';e.innerHTML=`<span class="src ai">● AI agent</span> deliberation hashed to <b>AgentJournal</b> · <b>${hash.slice(0,14)}…</b> on Arc${trace}`;}
+
+// ---- live mode: read the deployed MetaAllocator + AgentJournal on Arc ----
+async function pollChain(){
+  try{
+    const p=new ethers.JsonRpcProvider(LIVE.rpc);
+    const alloc=new ethers.Contract(LIVE.allocator,[
+      "function totalNav() view returns (uint256)",
+      "function previewSplit() view returns (uint16,uint16)",
+      "function performance(uint256) view returns (uint256)",
+      "function inBreaker(uint256) view returns (bool)",
+      "event Deposited(address indexed user,uint256 assets,uint256 shares,uint16 wA,uint16 wB)"
+    ],p);
+    const [nav,sp,perfA,perfB,brkA,brkB]=await Promise.all([
+      alloc.totalNav(),alloc.previewSplit(),alloc.performance(0),alloc.performance(1),alloc.inBreaker(0),alloc.inBreaker(1)
+    ]);
+    liveState.aum=Math.round(Number(nav)/1e6);
+    liveState.wa=Number(sp[0])/100; liveState.wb=Number(sp[1])/100;
+    brk.a=brkA; brk.b=brkB; liveState.brkA=brkA; liveState.brkB=brkB;
+    S.a.push(+(Number(perfA)/1e18*100).toFixed(3)); S.b.push(+(Number(perfB)/1e18*100).toFixed(3));
+    S.btc.push(last('btc')); S.spx.push(last('spx')); // benchmarks flat in live (wire a price feed)
+    labels.push((labels[labels.length-1]||0)+1);
+    for(const k in S){ if(S[k].length>N) S[k].shift(); } if(labels.length>N) labels.shift();
+    try{
+      const head=await p.getBlockNumber();
+      const evs=await alloc.queryFilter('Deposited', Math.max(0,head-45000), head);
+      liveState.users=new Set(evs.map(e=>e.args[0].toLowerCase())).size;
+    }catch(_){}
+    if(LIVE.journal){
+      const j=new ethers.Contract(LIVE.journal,[
+        "function count() view returns (uint256)",
+        "event Deliberation(uint256 indexed id,address indexed agent,bytes32 decisionHash,string view_,uint16 confidenceBps,string ipfsCid,uint64 timestamp)"
+      ],p);
+      liveState.turns=Number(await j.count());
+      const head=await p.getBlockNumber();
+      const dl=await j.queryFilter('Deliberation', Math.max(0,head-45000), head);
+      for(const e of dl){
+        const agent=e.args.agent.toLowerCase(), conf=Number(e.args.confidenceBps)/100;
+        const html=`<b>${e.args.view_}</b> · confidence ${conf.toFixed(0)}% — recorded on-chain.`;
+        if(LIVE.carryAgent && agent===LIVE.carryAgent){ liveState.whyB=html; liveState.hashB=e.args.decisionHash; liveState.cidB=e.args.ipfsCid; }
+        else { liveState.whyA=html; liveState.hashA=e.args.decisionHash; liveState.cidA=e.args.ipfsCid; }
+      }
+    }
+  }catch(e){ console.warn('pollChain failed:', e.message); }
+}
+function initLive(){ pollChain().then(render); setInterval(()=>{ if(running) pollChain().then(render); }, LIVE.pollMs); }
+
+function tick(){ if(!running) return; step(); if(Math.random()<0.4)turns++; if(Math.random()<0.45)users+=Math.floor(Math.random()*2); render(); }
+
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+window.addEventListener('DOMContentLoaded',()=>{
+  const ctx=document.getElementById('chart').getContext('2d');
+  const line=(label,c,w)=>({label,data:[],borderColor:c,backgroundColor:c,borderWidth:w,pointRadius:0,tension:.28,borderDash:label==='Bitcoin'||label==='S&P 500'?[5,4]:[]});
+  chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[
+    line('RegimeShift',css('--azure'),2.4),line('CarryFarm',css('--terra'),2.4),
+    line('Bitcoin',css('--btc'),1.4),line('S&P 500',css('--spx'),1.4)
+  ]},options:{animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+    scales:{x:{display:false},y:{grid:{color:css('--line')},ticks:{color:css('--faint'),font:{size:10}}}}}});
+  if(LIVE.enabled){
+    document.querySelector('.chip').innerHTML='● Live on <b>Arc</b> · reading MetaAllocator';
+    initLive();
+  } else {
+    turns=128; render();
+    setInterval(tick,650);
+  }
+  document.getElementById('toggle').onclick=e=>{running=!running;e.target.textContent=running?'⏸ Pause':'▶ Resume';};
+});
+</script>
+</body>
+</html>

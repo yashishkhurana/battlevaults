@@ -1,0 +1,17 @@
+# node
+**/node_modules/
+offchain/dist/
+
+# foundry build artifacts + vendored deps (CI fetches them; see .github/workflows/ci.yml)
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# secrets / env
+.env
+.env.*
+*.log
+
+# OS
+.DS_Store
