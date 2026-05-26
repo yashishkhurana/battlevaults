@@ -70,6 +70,24 @@ async function main() {
   const tree = buildActionTree(actions);
 
   const ctx = await fetchMarketContext();
+
+  // Size against the vault's ACTUAL on-chain USDC balance (read-only, no key) so the agent manages
+  // what it really holds and never tries to deposit more than the vault has. Falls back to the stub
+  // equity if the RPC isn't reachable (e.g. offline dry-run).
+  try {
+    const pc = createPublicClient({ chain: arcTestnet, transport: http(CHAIN.rpcUrl) });
+    const bal = (await pc.readContract({
+      address: ADDR.USDC,
+      abi: [parseAbiItem("function balanceOf(address) view returns (uint256)")],
+      functionName: "balanceOf",
+      args: [vault],
+    })) as bigint;
+    ctx.equityUsd = Number(bal) / 1e6;
+    console.log(`vault ${vault} USDC balance: $${ctx.equityUsd.toLocaleString()}`);
+  } catch (e) {
+    console.warn(`[balance] couldn't read vault USDC (${(e as Error).message}); using stub equity`);
+  }
+
   const signal = which === "regime" ? classifyRegime(ctx) : readFxCarry(ctx);
 
   // The LLM is the decision-maker; the rule engine is the deterministic fallback (no API key/err).
