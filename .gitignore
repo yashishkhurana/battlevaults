@@ -11,6 +11,8 @@ contracts/lib/
 # secrets / env
 .env
 .env.*
+!.env.example
+!**/.env.example
 *.log
 
 # OS

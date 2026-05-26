@@ -32,24 +32,25 @@ export async function decideWithLLM(opts: {
 
   try {
     const { system, user } = buildPrompt(opts.persona, opts.ctx, opts.signal, opts.allowed);
+
+    const body: Record<string, unknown> = {
+      model: MODEL,
+      temperature: 0.2,
+      max_tokens: 1024,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    };
+    // Strict JSON mode — honored by most OpenAI-compatible providers (Groq, OpenRouter, DeepSeek,
+    // vLLM, recent Ollama). Some free models 400 on it; set LLM_JSON_MODE=off to drop it (the prompt
+    // still demands raw JSON and the parser strips ``` fences either way).
+    if (process.env.LLM_JSON_MODE !== "off") body.response_format = { type: "json_object" };
+
     const res = await fetch(`${BASE_URL}/chat/completions`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.2,
-        max_tokens: 1024,
-        // strict JSON output; honored by DeepSeek cloud, vLLM, SGLang, TGI. If a server ignores it,
-        // the fence-stripping below still recovers the object.
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
+      headers: { "content-type": "application/json", authorization: `Bearer ${API_KEY}` },
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`llm ${res.status} ${await res.text()}`);
 
