@@ -51,7 +51,7 @@ contract BattleVaultsTest is Test {
         accA = new Accountant(owner, address(vaultA), 6, START_RATE);
         tellerA = new Teller(owner, address(vaultA), address(accA), address(usdc));
 
-        // ---- vault B (BasisFarm) ----
+        // ---- vault B (CarryFarm) ----
         vaultB = new BoringVault(owner, "Basis Vault", "bVLT", 18);
         accB = new Accountant(owner, address(vaultB), 6, START_RATE);
         tellerB = new Teller(owner, address(vaultB), address(accB), address(usdc));

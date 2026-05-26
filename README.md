@@ -130,5 +130,3 @@ npm run allocator             # print the live scoreboard;  ROLL=1 ALLOCATOR_PK=
   `solidity-auditor` skill on `src/decoders/*` before any live funds.
 
 > Scaffold for a hackathon — not audited. See "Known simplifications" in `ARCHITECTURE.md`.
-> `BasisDecoderAndSanitizer.sol` and `strategists/BasisFarm.ts` are deprecated stubs (the perp
-> cash-and-carry brain) kept only because the workspace couldn't delete them — remove when cloning.

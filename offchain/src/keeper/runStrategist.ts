@@ -38,13 +38,8 @@ function encodeCall(signature: string, args: unknown[]): Hex {
 }
 
 /**
- * STUB market data. Wire your real price feed + funding/FX APIs here.
- *
- * Defaults are tuned for a SAFE live run on Arc: regime resolves risk-off (park in USYC) and
- * CarryFarm holds USYC. So an EXECUTE cycle only touches the USYC teller — never the cross-chain
- * bridge (REMOTE_RISK_VAULT is unset -> would target 0x0) or StableFX (RFQ not implemented).
- * Flip cryptoYieldApy high / eurUsdCarryPct above ~1.5 (and set REMOTE_RISK_VAULT) to exercise
- * the risk-on / FX paths once those venues are wired.
+ * STUB market data — wire real price/FX feeds here. Defaults resolve risk-off (USYC-only) so a live
+ * EXECUTE never hits the unset bridge or StableFX; raise cryptoYieldApy / eurUsdCarryPct to flip.
  */
 async function fetchMarketContext(): Promise<MarketContext> {
   return {

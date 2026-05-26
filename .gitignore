@@ -17,3 +17,8 @@ contracts/lib/
 
 # OS
 .DS_Store
+
+# deprecated stubs — dropped from git; remove from your working tree with `rm`
+contracts/src/decoders/BasisDecoderAndSanitizer.sol
+offchain/src/strategists/BasisFarm.ts
+offchain/src/signals/funding.ts
