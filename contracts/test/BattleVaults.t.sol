@@ -92,6 +92,18 @@ contract BattleVaultsTest is Test {
         assertGt(allocator.balanceOf(user), 0);
     }
 
+    function test_redeem_returns_usdc() public {
+        vm.startPrank(user);
+        usdc.approve(address(allocator), 100_000e6);
+        allocator.deposit(100_000e6, 0);
+        uint256 battle = allocator.balanceOf(user);
+        allocator.redeem(battle, 0);
+        vm.stopPrank();
+
+        assertEq(allocator.balanceOf(user), 0); // all BATTLE burned
+        assertApproxEqAbs(usdc.balanceOf(user), 1_000_000e6, 2e6); // ~back to starting USDC
+    }
+
     function test_tilt_follows_the_winner() public {
         // make vault B outperform
         vm.warp(block.timestamp + 2 hours);

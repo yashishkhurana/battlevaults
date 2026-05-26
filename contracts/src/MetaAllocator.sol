@@ -44,6 +44,7 @@ contract MetaAllocator is ERC20, Auth {
     uint16 public maxDrawdownBps = 2000; // a vault >20% below its HWM is cut to 0%
 
     event Deposited(address indexed user, uint256 assets, uint256 shares, uint16 wA, uint16 wB);
+    event Redeemed(address indexed user, uint256 shares, uint256 assets);
     event EpochRolled(uint256 rateA, uint256 rateB, uint64 ts);
     event ParamsUpdated(uint16 tiltBps, uint16 maxWeightBps, uint16 maxDrawdownBps);
 
@@ -140,6 +141,32 @@ contract MetaAllocator is ERC20, Auth {
         _mint(msg.sender, shares);
 
         emit Deposited(msg.sender, assets, shares, wA, wB);
+    }
+
+    /**
+     * @notice Burn BATTLE shares and withdraw a pro-rata slice of the underlying back to USDC.
+     *         Pulls each vault's shares out through its Teller (which returns USDC), plus a
+     *         proportional cut of any idle USDC. NOTE: requires the vaults to hold liquid USDC — if
+     *         the agent has parked it in USYC, an agent unpark (redeem USYC) must run first.
+     */
+    function redeem(uint256 shares, uint256 minAssets) external returns (uint256 assets) {
+        if (shares == 0) revert MetaAllocator__Zero();
+        uint256 supply = totalSupply;
+        _burn(msg.sender, shares);
+
+        // proportional cut of any idle USDC the allocator holds
+        assets = (base.balanceOf(address(this)) * shares) / supply;
+
+        // proportional withdrawal of each vault's shares -> USDC back to the allocator
+        for (uint256 i; i < 2; ++i) {
+            VaultInfo storage v = vaults[i];
+            uint256 take = (v.shareToken.balanceOf(address(this)) * shares) / supply;
+            if (take > 0) assets += v.teller.withdraw(take, 0);
+        }
+
+        if (assets < minAssets) revert MetaAllocator__MinNotMet();
+        base.safeTransfer(msg.sender, assets);
+        emit Redeemed(msg.sender, shares, assets);
     }
 
     // --------------------------------------------------------------------- //
