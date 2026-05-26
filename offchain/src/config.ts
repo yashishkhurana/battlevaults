@@ -33,11 +33,10 @@ export const ADDR = {
   // support before mint/redeem works. For the demo, the merkle leaf pins the real Teller; execution
   // is gated on allowlisting (request early). Use a mock USYC if allowlisting hasn't landed.
   // USYC token on Arc Testnet — confirmed via arcscan (supersedes the 0xe918… the docs listed).
-  USYC: "0x825Ae482558415310C71B7E03d2BbBe409345903" as Hex,
-  // GO-LIVE GATE: confirm on arcscan whether deposit/redeem live on the token itself or a separate
-  // Teller. Defaulted to the token address (token-as-teller); if arcscan shows a distinct Teller
-  // contract, put it here and re-run `npm run build-tree`.
-  USYC_TELLER: "0x825Ae482558415310C71B7E03d2BbBe409345903" as Hex,
+  USYC: "0xC8f0a1d3E0d8520DFAd5051592C12d05cc8F88C8" as Hex,
+  // Mock USYC teller (no allowlist) — paired with MOCK_USYC above. Swap back to the real Teller
+  // and rebuild roots once the vault is on the Entitlements allowlist.
+  USYC_TELLER: "0xD8173fEC538ba368d93424D4424a2771C39d45AF" as Hex,
   USYC_ENTITLEMENTS: "0xcc205224862c7641930c87679e98999d23c26113" as Hex,
 
   // --- StableFX: RFQ FX engine for USDC<->EURC (the "FX diversification" venue). Needs Permit2. ---

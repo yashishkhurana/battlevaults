@@ -1,7 +1,7 @@
 {
-  "regimeRoot": "0x43c86c39e1b762b2043893de9e76fcd2eafb7d38aba890a7c18291641ea1f071",
-  "carryRoot": "0x8a67e75614c6f1ab0a7c5bb10450293b1ec6b9a4f171217d85df37af30b747bf",
+  "regimeRoot": "0x451077aeda92ac734c429eaedcfc1597aa7b3f50892011c51245a650be66fd6d",
+  "carryRoot": "0x1472b4960897fefc64f0e19ecc2a6fe43cc6444813a2095ed06eb2d1dc698158",
   "regimeLeafCount": 5,
   "carryLeafCount": 7,
-  "generatedAt": "2026-05-25T23:18:01.519Z"
+  "generatedAt": "2026-05-26T02:41:05.659Z"
 }
